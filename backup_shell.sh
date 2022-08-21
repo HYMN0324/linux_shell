@@ -4,11 +4,10 @@ BACKUP_TYPE=web
 BACKUP_DATE="`date '+%Y%m%d'`"
 BACKUP_NAME=${BACKUP_DATE}${BACKUP_TYPE}${BACKUP_IP}.tar.gz
 BACKUP_ROOT_PATH=/home/backup
-BACKUP_TEMP_PATH=${BACKUP_ROOT_PATH}/temp
 BACKUP_ERROR_PATH=${BACKUP_ROOT_PATH}/err
 BACKUP_PATH=${BACKUP_ROOT_PATH}/${BACKUP_TYPE}
 
-REMOTE_INFO_FILE=${BACKUP_ROOT_PATH}/conf/remote_info.txt
+REMOTE_INFO_FILE=${BACKUP_ROOT_PATH}/conf/remote_info.sh
 
 SOURCE_PATH=/home/nessystem/nesweb/htdocs
 
@@ -19,31 +18,30 @@ if [ ! -e ${REMOTE_INFO_FILE} ];then
     echo "remote info file dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
     exit 1
 else
-    REMOTE_IP=grep | awk '{print $1}' ${REMOTE_INFO_FILE}
-    REMOTE_USER=grep | awk '{print $2}' ${REMOTE_INFO_FILE}
-    REMOTE_PW=grep | awk '{print $3}' ${REMOTE_INFO_FILE}
+    source ${REMOTE_INFO_FILE} #File include
     REMOTE_PATH=/backup/${BACKUP_TYPE}/${BACKUP_IP}
 fi
 
-if [ ! -d ${BACKUP_TEMP_PATH} ];then
-    mkdir -p ${BACKUP_TEMP_PATH}
-fi
 if [ ! -d ${BACKUP_PATH} ];then
     mkdir -p ${BACKUP_PATH}
 fi
-cp -arp ${SOURCE_PATH}/* ${BACKUP_TEMP_PATH}
-wait
-cd ${BACKUP_PATH}
-tar -zcf ${BACKUP_NAME} ${BACKUP_TEMP_PATH}
-wait
+if [ ! -d ${SOURCE_PATH} ];then
+    if [ ! -d ${BACKUP_ERROR_PATH} ];then
+        mkdir -p ${BACKUP_ERROR_PATH}
+    fi
+    echo "source directory dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
+    exit 1
+else
+    cd ${BACKUP_PATH}
+    tar -zcf ${BACKUP_NAME} ${SOURCE_PATH}
+    wait
+fi
 
 expect << EOF
-  spawn sudo rsync ${BACKUP_PATH}/${BACKUP_NAME} ${REMOTE_USER}@${REMOTE_IP}:${REMOTE_PATH}
-  expect "password:"
-  sleep 0.2
-  send "${REMOTE_PW}\n"
+    spawn sudo rsync ${BACKUP_PATH}/${BACKUP_NAME} ${REMOTE_USER}@${REMOTE_IP}:${REMOTE_PATH}
+    expect "password:"
+    sleep 0.2
+    send "${REMOTE_PW}\n"
 expect eof
 EOF
 wait
-
-rm -rf ${BACKUP_TEMP_PATH}
