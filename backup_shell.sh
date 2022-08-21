@@ -4,24 +4,24 @@ BACKUP_TYPE=web
 BACKUP_DATE="`date '+%Y%m%d'`"
 BACKUP_NAME=${BACKUP_DATE}${BACKUP_TYPE}${BACKUP_IP}.tar.gz
 BACKUP_ROOT_PATH=/home/backup
-BACKUP_TEMP_PATH={$BACKUP_ROOT_PATH}/temp
-BACKUP_PATH={$BACKUP_ROOT_PATH}/${BACKUP_TYPE}
+BACKUP_TEMP_PATH=${BACKUP_ROOT_PATH}/temp
 BACKUP_ERROR_PATH=${BACKUP_ROOT_PATH}/err
+BACKUP_PATH=${BACKUP_ROOT_PATH}/${BACKUP_TYPE}
 
-REMOTE_INFO_PATH=${BACKUP_ROOT_PATH}/conf/remote_info.txt
+REMOTE_INFO_FILE=${BACKUP_ROOT_PATH}/conf/remote_info.txt
 
 SOURCE_PATH=/home/nessystem/nesweb/htdocs
 
-if [ ! -e $REMOTE_INFO ];then
+if [ ! -e ${REMOTE_INFO_FILE} ];then
     if [ ! -d ${BACKUP_ERROR_PATH} ];then
         mkdir -p ${BACKUP_ERROR_PATH}
     fi
-    echo "remote info file dose not exist." >> ${BACKUP_ERROR_PATH}/{$BACKUP_DATE}_error.txt
+    echo "remote info file dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
     exit 1
 else
-    REMOTE_IP=awk '{ print $1 }' ${REMOTE_INFO_PATH}
-    REMOTE_USER=awk '{ print $2 }' ${REMOTE_INFO_PATH}
-    REMOTE_PW=awk '{ print $3 }' ${REMOTE_INFO_PATH}
+    REMOTE_IP=grep | awk '{print $1}' ${REMOTE_INFO_FILE}
+    REMOTE_USER=grep | awk '{print $2}' ${REMOTE_INFO_FILE}
+    REMOTE_PW=grep | awk '{print $3}' ${REMOTE_INFO_FILE}
     REMOTE_PATH=/backup/${BACKUP_TYPE}/${BACKUP_IP}
 fi
 
