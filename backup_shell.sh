@@ -18,7 +18,8 @@ if [ ! -e ${REMOTE_INFO_FILE} ];then
     echo "remote info file dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
     exit 1
 else
-    source ${REMOTE_INFO_FILE} #File include
+    #File include
+    source ${REMOTE_INFO_FILE}
     REMOTE_PATH=/backup/${BACKUP_TYPE}/${BACKUP_IP}
 fi
 
@@ -44,4 +45,3 @@ expect << EOF
     send "${REMOTE_PW}\n"
 expect eof
 EOF
-wait
