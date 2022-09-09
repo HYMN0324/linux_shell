@@ -1,47 +1,44 @@
 #!/bin/bash
-BACKUP_IP=192_168_1_57
-BACKUP_TYPE=web
-BACKUP_DATE="`date '+%Y%m%d'`"
-BACKUP_NAME=${BACKUP_DATE}${BACKUP_TYPE}${BACKUP_IP}.tar.gz
-BACKUP_ROOT_PATH=/home/backup
-BACKUP_ERROR_PATH=${BACKUP_ROOT_PATH}/err
-BACKUP_PATH=${BACKUP_ROOT_PATH}/${BACKUP_TYPE}
 
-REMOTE_INFO_FILE=${BACKUP_ROOT_PATH}/conf/remote_info.sh
+############################
+# WRITER      : hyomin     #
+# WRITE_DATE  : 2022-08-20 #
+# UPDATE_DATE : 2022-09-09 #
+# CONTENT     : WEB BACKUP #
+############################
 
-SOURCE_PATH=/home/nessystem/nesweb/htdocs
+EXECUTE_DATE="`date '+%Y-%m-%d'`"
+EXECUTE_DATE_TIME=" `date '+%Y-%m-%d %H:%M:%S'`"
+BACKUP_CONF_FILE=/home/backup/conf/backup_conf.sh
+BACKUP_TEMP_ERROR_FILE=/home/backup/log/${EXECUTE_DATE}_error.txt
 
-if [ ! -e ${REMOTE_INFO_FILE} ];then
-    if [ ! -d ${BACKUP_ERROR_PATH} ];then
-        mkdir -p ${BACKUP_ERROR_PATH}
-    fi
-    echo "remote info file dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
-    exit 1
+if [ ! -e ${BACKUP_CONF_FILE} ];then
+    echo "backup conf file dose not exist.[ERROR 1000] ${EXECUTE_DATE_TIME}" >> ${BACKUP_TEMP_ERROR_FILE}
+    exit 1000
 else
-    #File include
-    source ${REMOTE_INFO_FILE}
-    REMOTE_PATH=/backup/${BACKUP_TYPE}/${BACKUP_IP}
+    # backup conf file include
+    source ${BACKUP_CONF_FILE}
 fi
 
-if [ ! -d ${BACKUP_PATH} ];then
-    mkdir -p ${BACKUP_PATH}
-fi
-if [ ! -d ${SOURCE_PATH} ];then
-    if [ ! -d ${BACKUP_ERROR_PATH} ];then
-        mkdir -p ${BACKUP_ERROR_PATH}
-    fi
-    echo "source directory dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
-    exit 1
+if [ ! -d ${WEB_SOURCE_PATH} ];then
+    fn_error_log "source directory dose not exist.[ERROR 2000] ${EXECUTE_DATE_TIME}"
+    exit 2000
 else
+    if [ ! -d ${BACKUP_PATH} ];then
+        mkdir -p ${BACKUP_PATH}
+    fi
+
     cd ${BACKUP_PATH}
-    tar -zcf ${BACKUP_NAME} ${SOURCE_PATH}
+    tar -zcf ${BACKUP_FILE_NAME} ${SOURCE_PATH}
     wait
 fi
 
 expect << EOF
-    spawn sudo rsync ${BACKUP_PATH}/${BACKUP_NAME} ${REMOTE_USER}@${REMOTE_IP}:${REMOTE_PATH}
+    spawn sudo rsync ${BACKUP_PATH}/${BACKUP_FILE_NAME} ${DEST_USER}@${DEST_IP}:${DEST_PATH}
     expect "password:"
     sleep 0.2
-    send "${REMOTE_PW}\n"
+    send "${DEST_PW}\n"
 expect eof
 EOF
+
+exit 0
