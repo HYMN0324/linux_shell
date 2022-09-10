@@ -29,7 +29,7 @@ else
     fi
 
     cd ${BACKUP_PATH}
-    tar -zcf ${BACKUP_FILE_NAME} ${SOURCE_PATH}
+    tar -zcf ${BACKUP_FILE_NAME} ${WEB_SOURCE_PATH}
     wait
 fi
 
@@ -38,7 +38,7 @@ expect << EOF
     expect "password:"
     sleep 0.2
     send "${DEST_PW}\n"
-expect eof
+    expect eof
 EOF
 
 exit 0
