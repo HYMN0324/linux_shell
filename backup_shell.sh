@@ -24,17 +24,33 @@ if [ ! -d ${WEB_SOURCE_PATH} ];then
     fn_error_log "source directory dose not exist.[ERROR 2000] ${EXECUTE_DATE_TIME}"
     exit 2000
 else
+    cd ${WEB_SOURCE_PATH}
+    web_dir_list=`ls -d */ | sed s,/,,`
+    for web_dir in $web_dir_list;do
+        tar -zcf $web_dir.tar.gz ${WEB_SOURCE_PATH}/$web_dir
+        wait
+    done
+
+    #web file copy(exclude archive file)
+    web_file_list=`find ./ -maxdepth 1 -type f | sed 's/^\.\///g'`
+
     if [ ! -d ${BACKUP_PATH} ];then
         mkdir -p ${BACKUP_PATH}
     fi
-
     cd ${BACKUP_PATH}
-    tar -zcf ${BACKUP_FILE_NAME} ${WEB_SOURCE_PATH}
+
+    for web_file in $web_file_list;do
+        cp -fap ${WEB_SOURCE_PATH}/$web_file ./$web_file
+    done
+
+    cd ../
+
+    tar -zcf ${BACKUP_FILE_NAME} ${BACKUP_PATH}
     wait
 fi
 
 expect << EOF
-    spawn sudo rsync ${BACKUP_PATH}/${BACKUP_FILE_NAME} ${DEST_USER}@${DEST_IP}:${DEST_PATH}
+    spawn sudo rsync ${BACKUP_FILE_NAME} ${DEST_USER}@${DEST_IP}:${DEST_PATH}
     expect "password:"
     sleep 0.2
     send "${DEST_PW}\n"
