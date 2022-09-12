@@ -25,12 +25,9 @@ if [ ! -d ${WEB_SOURCE_PATH} ];then
     exit 2000
 else
     cd ${WEB_SOURCE_PATH}
-    web_dir_list=`ls -d */ | sed s,/,,`
-    for web_dir in $web_dir_list;do
-        tar -zcf $web_dir.tar.gz ${WEB_SOURCE_PATH}/$web_dir
-        wait
-    done
 
+    #web dir create to archive file
+    web_dir_list=`ls -d */ | sed s,/,,`
     #web file copy(exclude archive file)
     web_file_list=`find ./ -maxdepth 1 -type f | sed 's/^\.\///g'`
 
@@ -39,14 +36,21 @@ else
     fi
     cd ${BACKUP_PATH}
 
+    for web_dir in $web_dir_list;do
+        tar -zcf $web_dir.tar.gz ${WEB_SOURCE_PATH}/$web_dir
+        wait
+    done
+
     for web_file in $web_file_list;do
-        cp -fap ${WEB_SOURCE_PATH}/$web_file ./$web_file
+        cp -apf ${WEB_SOURCE_PATH}/$web_file ./$web_file
     done
 
     cd ../
 
     tar -zcf ${BACKUP_FILE_NAME} ${BACKUP_PATH}
     wait
+
+    rm -rf ${BACKUP_DATE}
 fi
 
 expect << EOF
