@@ -1,55 +1,96 @@
 #!/bin/bash
-BACKUP_IP=192_168_1_57
-BACKUP_TYPE=db_mariadb
-BACKUP_DATE="`date '+%Y%m%d'`"
-BACKUP_NAME=${BACKUP_DATE}${BACKUP_TYPE}${BACKUP_IP}.tar.gz
-BACKUP_ROOT_PATH=/home/backup
-BACKUP_ERROR_PATH=${BACKUP_ROOT_PATH}/err
-BACKUP_PATH=${BACKUP_ROOT_PATH}/${BACKUP_TYPE}
+  
+################################
+# WRITER      : hyomin         #
+# WRITE_DATE  : 2022-08-20     #
+# UPDATE_DATE : 2022-09-25     #
+# CONTENT     : MariaDB BACKUP #
+################################
 
-DB_INFO_FILE=${BACKUP_ROOT_PATH}/conf/db_info.sh
-REMOTE_INFO_FILE=${BACKUP_ROOT_PATH}/conf/remote_info.sh
+EXECUTE_DATE="`date '+%Y-%m-%d'`"
+EXECUTE_DATE_TIME=" `date '+%Y-%m-%d %H:%M:%S'`"
+BACKUP_TYPE=mariadb
+BACKUP_CONF_FILE=/home/backup/conf/backup_conf.sh
+BACKUP_TEMP_ERROR_FILE=/home/backup/log/${EXECUTE_DATE}_error.txt
 
-if [ ! -e ${DB_INFO_FILE} ];then
+if [ ! -e ${BACKUP_CONF_FILE} ];then
+    echo "backup conf file dose not exist.[ERROR 1010] ${EXECUTE_DATE_TIME}" >> ${BACKUP_TEMP_ERROR_FILE}
+    exit 1
+else
+    # backup conf file include
+    source ${BACKUP_CONF_FILE}
+fi
+
+if [ ! command -v mariadb &> /dev/null ];then
     if [ ! -d ${BACKUP_ERROR_PATH} ];then
         mkdir -p ${BACKUP_ERROR_PATH}
     fi
-    echo "db info file dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}`date '+%Y%m%d$H$M$S'`_error.txt
+    #fn_error_log "mariadb is not installed.[ERROR 1011] ${BACKUP_ERROR_PATH}"
     exit 1
 else
-    #db_info File include
-    source ${DB_INFO_FILE}
-fi
-
-if [ ! -e ${REMOTE_INFO_FILE} ];then
-    if [ ! -d ${BACKUP_ERROR_PATH} ];then
-        mkdir -p ${BACKUP_ERROR_PATH}
+    if [ ! -d ${BACKUP_PATH} ];then
+        mkdir -p ${BACKUP_PATH}
     fi
-    echo "remote info file dose not exist." >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
-    exit 1
-else
-    #remote_info File include
-    source ${REMOTE_INFO_FILE}
-    REMOTE_PATH=/backup/${BACKUP_TYPE}/${BACKUP_IP}
-fi
+    cd ${BACKUP_PATH}
 
-if [ ! -d ${BACKUP_PATH} ];then
-    mkdir -p ${BACKUP_PATH}
-fi
-
-if [ ! `which mariadb` ];then
-    if [ ! -d ${BACKUP_ERROR_PATH} ];then
-        mkdir -p ${BACKUP_ERROR_PATH}
-    fi
-    echo "mariadb dose not installed" >> ${BACKUP_ERROR_PATH}/${BACKUP_DATE}_error.txt
-    exit 1
-else
-    db_list=`echo "show databases;" | mysql -N -uroot -p "${DB_PASSWORD}"`
-
+    db_list=`echo "show databases" | mariadb -uroot -p"${DB_PASSWORD}"`
     for db in $db_list ;do
-        table_list=`echo "show tables" | mysql -N -uroot -p "${DB_PASSWORD}" $db`
-	for table in $table_list ;do
-            mysqldump -uroot -p "${DB_PASSWORD}" $db $table > $db_$table.sql
-	done
+        if [ $db == "Database" ];then
+            continue
+        else
+            if [ ! -d $db ];then
+                mkdir $db
+            fi
+            cd $db
+        fi
+
+        if [ ! -d table ];then
+            mkdir table
+        fi
+        cd table
+        table_list=`echo "show tables" | mariadb -uroot -p"${DB_PASSWORD}" $db`
+        for table in $table_list ;do
+            if [ $table == "Tables_in_$db" ];then
+                continue
+            else
+                mariadb-dump --lock-tables=0 -uroot -p"${DB_PASSWORD}" $db $table > $db_$table.sql
+                wait
+            fi
+        done
+        cd ../../
+
+        ######## dump view list will update.. ########
+        #cd../
+        #if [ ! -d view ];then
+        #    mkdir view
+        #fi
+        #cd view
+        #view_list=`echo "select table_name as views from information_schema.views where table_schema like '$db'" | mariadb -uroot -p"${DB_PASSWORD}"`
+        #for view in $view_list ;do
+        #    if [ $view == "views" ];then
+        #        continue
+        #    else
+        #        mariadb-dump blahblahblahblah
+        #        wait
+        #    fi
+        #done
+        #cd ../../
     done
+
+    cd ../
+
+    tar -zcf ${BACKUP_FILE_NAME} ${BACKUP_PATH}
+    wait
+
+    rm -rf ${BACKUP_DATE}
+
+    #expect << EOF
+    #    spawn sudo rsync ${BACKUP_FILE_NAME} ${DEST_USER}@${DEST_IP}:${DEST_PATH}
+    #    expect "password:"
+    #    sleep 0.2
+    #    send "${DEST_PW}\n"
+    #    expect eof
+    #EOF
 fi
+
+exit 0
