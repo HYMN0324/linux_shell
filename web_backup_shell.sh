@@ -9,12 +9,13 @@
 
 EXECUTE_DATE="`date '+%Y-%m-%d'`"
 EXECUTE_DATE_TIME=" `date '+%Y-%m-%d %H:%M:%S'`"
+BACKUP_TYPE=web
 BACKUP_CONF_FILE=/home/backup/conf/backup_conf.sh
 BACKUP_TEMP_ERROR_FILE=/home/backup/log/${EXECUTE_DATE}_error.txt
 
 if [ ! -e ${BACKUP_CONF_FILE} ];then
     echo "backup conf file dose not exist.[ERROR 1000] ${EXECUTE_DATE_TIME}" >> ${BACKUP_TEMP_ERROR_FILE}
-    exit 1000
+    exit 1
 else
     # backup conf file include
     source ${BACKUP_CONF_FILE}
@@ -22,7 +23,7 @@ fi
 
 if [ ! -d ${WEB_SOURCE_PATH} ];then
     fn_error_log "source directory dose not exist.[ERROR 2000] ${EXECUTE_DATE_TIME}"
-    exit 2000
+    exit 1
 else
     cd ${WEB_SOURCE_PATH}
 
