@@ -59,7 +59,7 @@ else
             fi
         done
 
-        cd../
+        cd ../
 
         # view dump
         if [ ! -d view ];then
