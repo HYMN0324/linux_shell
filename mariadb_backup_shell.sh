@@ -44,6 +44,7 @@ else
             cd $db
         fi
 
+        # table dump
         if [ ! -d table ];then
             mkdir table
         fi
@@ -57,24 +58,24 @@ else
                 wait
             fi
         done
-        cd ../../
 
-        ######## dump view list will update.. ########
-        #cd../
-        #if [ ! -d view ];then
-        #    mkdir view
-        #fi
-        #cd view
-        #view_list=`echo "select table_name as views from information_schema.views where table_schema like '$db'" | mariadb -uroot -p"${DB_PASSWORD}"`
-        #for view in $view_list ;do
-        #    if [ $view == "views" ];then
-        #        continue
-        #    else
-        #        mariadb-dump blahblahblahblah
-        #        wait
-        #    fi
-        #done
-        #cd ../../
+        cd../
+
+        # view dump
+        if [ ! -d view ];then
+            mkdir view
+        fi
+        cd view
+        view_list=`echo "select table_name as views from information_schema.views where table_schema like '$db'" | mariadb -uroot -p"${DB_PASSWORD}"`
+        for view in $view_list ;do
+            if [ $view == "views" ];then
+                continue
+            else
+                mariadb-dump --lock-tables=0 -uroot -p"${DB_PASSWORD}" $db $view > $db_$view.sql
+                wait
+            fi
+        done
+        cd ../../
     done
 
     cd ../
@@ -83,14 +84,14 @@ else
     wait
 
     rm -rf ${BACKUP_DATE}
-
-    #expect << EOF
-    #    spawn sudo rsync ${BACKUP_FILE_NAME} ${DEST_USER}@${DEST_IP}:${DEST_PATH}
-    #    expect "password:"
-    #    sleep 0.2
-    #    send "${DEST_PW}\n"
-    #    expect eof
-    #EOF
 fi
+
+expect << EOF
+    spawn sudo rsync ${BACKUP_FILE_NAME} ${DEST_USER}@${DEST_IP}:${DEST_PATH}
+    expect "password:"
+    sleep 0.2
+    send "${DEST_PW}\n"
+    expect eof
+EOF
 
 exit 0
